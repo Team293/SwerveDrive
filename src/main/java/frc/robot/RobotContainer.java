@@ -10,6 +10,8 @@ import frc.robot.commands.SequentialAutoCommand.StartPositions;
 import frc.robot.subsystems.Drivetrain;
 
 import com.ctre.phoenix.motorcontrol.NeutralMode;
+import com.pathplanner.lib.auto.AutoBuilder;
+import com.pathplanner.lib.path.PathPlannerPath;
 
 import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
@@ -38,6 +40,7 @@ public class RobotContainer {
 
     public final SendableChooser<Command> m_driveChooser = new SendableChooser<>();
     public final SendableChooser<StartPositions> m_autoChooser = new SendableChooser<>();
+    private final SendableChooser<Command> autoChooser;
 
     /**
      * The container for the robot. Contains subsystems, OI devices, and commands.
@@ -48,6 +51,8 @@ public class RobotContainer {
 
         // Setting default command for drivetrain as VelocityDrive
         m_drivetrain.setDefaultCommand(new OrientedDrive(m_drivetrain, m_driverController, true));
+        autoChooser = AutoBuilder.buildAutoChooser();     
+        SmartDashboard.putData("Auto Chooser", autoChooser);
     }
 
     public static RobotContainer getInstance() {
@@ -96,15 +101,19 @@ public class RobotContainer {
      *
      * @return the command to run in autonomous
      */
+
+  
+       
     public Command getAutonomousCommand() {
         // The selected command will be run in autonomous
         // When either the alliance colour check or the location check fails it defaults
         // to the blue left side
+        PathPlannerPath path = PathPlannerPath.fromPathFile("Example Path");
+    // Create a path following command using AutoBuilder. This will also trigger event markers.
+       //return AutoBuilder.followPathWithEvents(path);  
         Command autoCommand = null;
-    
-  
         autoCommand = new SequentialAutoCommand(m_drivetrain, m_autoChooser.getSelected());
-
-        return autoCommand;
+        return autoChooser.getSelected();
     }
-}
+    }
+

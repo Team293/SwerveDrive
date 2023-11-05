@@ -12,6 +12,7 @@
 
 package frc.robot.subsystems;
 
+import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import frc.lib.util.SwerveConstants;
@@ -20,6 +21,12 @@ import frc.robot.classes.Position2D;
 
 import com.ctre.phoenix.motorcontrol.NeutralMode;
 import com.kauailabs.navx.frc.AHRS;
+import com.pathplanner.lib.auto.AutoBuilder;
+import com.pathplanner.lib.commands.PathPlannerAuto;
+import com.pathplanner.lib.path.PathConstraints;
+import com.pathplanner.lib.util.HolonomicPathFollowerConfig;
+import com.pathplanner.lib.util.PIDConstants;
+import com.pathplanner.lib.util.ReplanningConfig;
 
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
@@ -31,12 +38,14 @@ import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.kinematics.SwerveDriveKinematics;
 import edu.wpi.first.math.kinematics.SwerveDriveOdometry;
 import edu.wpi.first.math.kinematics.SwerveModulePosition;
-import edu.wpi.first.math.kinematics.SwerveModuleState; 
+import edu.wpi.first.math.kinematics.SwerveModuleState;
+import edu.wpi.first.math.util.Units; 
 
 public class Drivetrain extends SubsystemBase {
     public SwerveDriveOdometry m_swerveOdometry;
     public SwerveModule[] m_swerveModules;
     public final AHRS gyro;
+   
 
     public Drivetrain() {
         gyro = new AHRS(SerialPort.Port.kMXP);
@@ -56,28 +65,40 @@ public class Drivetrain extends SubsystemBase {
 
         // Create a new swerve odometry object, similar to the Kinematics.java file before 
         m_swerveOdometry = new SwerveDriveOdometry(SwerveConstants.Swerve.swerveKinematics, getYaw(), getModulePositions());
+
+        AutoBuilder.configureHolonomic(
+            this::getPose, // Robot pose supplier
+            this::resetOdometry, // Method to reset odometry (will be called if your auto has a starting pose)
+           // this::getRobotRelativeSpeeds, // ChassisSpeeds supplier. MUST BE ROBOT RELATIVE
+           // this::drive, // Method that will drive the robot given ROBOT RELATIVE ChassisSpeeds
+            new HolonomicPathFollowerConfig( // HolonomicPathFollowerConfig, this should likely live in your Constants class
+                new PIDConstants(5.0, 0.0, 0.0), // Translation PID constants
+                new PIDConstants(5.0, 0.0, 0.0), // Rotation PID constants
+                4.5, // Max module speed, in m/s
+                0.4, // Drive base radius in meters. Distance from robot center to furthest module.
+                new ReplanningConfig() // Default path replanning config. See the API for the options here
+            ),
+            this // Reference to this subsystem to set requirements
+
+        );
+
+        Pose2d targetPose = new Pose2d(10, 5, Rotation2d.fromDegrees(180));
+
+        // Create the constraints to use while pathfinding
+        PathConstraints constraints = new PathConstraints(
+          3.0, 4.0, 
+          Units.degreesToRadians(540), Units.degreesToRadians(720));
+
+        // Since AutoBuilder is configured, we can use it to build pathfinding commands
+        Command pathfindingCommand = AutoBuilder.pathfindToPose(
+             targetPose,
+             constraints,
+             0.0, // Goal end velocity in meters/sec
+             0.0 // Rotation delay distance in meters. This is how far the robot should travel before attempting to rotate.
+        );
     }
 
-    public void drive(Translation2d translation, Rotation2d rotation, boolean fieldRelative, boolean isOpenLoop) {
-        SwerveModuleState[] swerveModuleStates = 
-            SwerveConstants.Swerve.swerveKinematics.toSwerveModuleStates(
-                fieldRelative ? ChassisSpeeds.fromFieldRelativeSpeeds(
-                                    translation.getX(),
-                                    translation.getY(),
-                                    rotation.getDegrees(),
-                                    getYaw()
-                                )
-                                : new ChassisSpeeds(
-                                    translation.getX(),
-                                    translation.getY(),
-                                    rotation.getDegrees())
-                                );
-        SwerveDriveKinematics.desaturateWheelSpeeds(swerveModuleStates, SwerveConstants.Swerve.maxSpeed);
-
-        for (SwerveModule module : m_swerveModules) {
-            module.setDesiredState(swerveModuleStates[module.m_moduleNumber], isOpenLoop);
-        }
-    }
+    
 
     public void setNeutralMode(NeutralMode nm) {
         for (SwerveModule module : m_swerveModules) {
@@ -113,6 +134,15 @@ public class Drivetrain extends SubsystemBase {
     public Pose2d getPose() {
         return m_swerveOdometry.getPoseMeters();
     }
+
+   /*  public getRobotRelativeSpeeds(){
+      return
+                                   
+    }
+*/
+  //  public Pose2d resetPose(){
+   //     m_swerveOdometry.resetPosition(getYaw(), getModulePositions(), m_startingPose);
+  //  }
 
     public void resetOdometry(Pose2d pose) {
         m_swerveOdometry.resetPosition(getYaw(), getModulePositions(), pose);
@@ -156,5 +186,9 @@ public class Drivetrain extends SubsystemBase {
 
     public void stop() {
         drive(new Translation2d(0, 0), getYaw(), true, false);
+    }
+
+    public Command getAutonomousCommand(){
+        return new PathPlannerAuto("Example Auto");
     }
 }
