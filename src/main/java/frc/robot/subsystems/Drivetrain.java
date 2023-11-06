@@ -12,13 +12,6 @@
 
 package frc.robot.subsystems;
 
-import edu.wpi.first.wpilibj2.command.Command;
-import edu.wpi.first.wpilibj2.command.SubsystemBase;
-import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
-import frc.lib.util.SwerveConstants;
-import frc.robot.SwerveModule;
-import frc.robot.classes.Position2D;
-
 import com.ctre.phoenix.motorcontrol.NeutralMode;
 import com.kauailabs.navx.frc.AHRS;
 import com.pathplanner.lib.auto.AutoBuilder;
@@ -31,15 +24,20 @@ import com.pathplanner.lib.util.ReplanningConfig;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
-import edu.wpi.first.wpilibj.SerialPort;
-import edu.wpi.first.wpilibj.Timer;
-
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.kinematics.SwerveDriveKinematics;
 import edu.wpi.first.math.kinematics.SwerveDriveOdometry;
 import edu.wpi.first.math.kinematics.SwerveModulePosition;
 import edu.wpi.first.math.kinematics.SwerveModuleState;
-import edu.wpi.first.math.util.Units; 
+import edu.wpi.first.math.util.Units;
+import edu.wpi.first.wpilibj.SerialPort;
+import edu.wpi.first.wpilibj.Timer;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
+import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import frc.lib.util.SwerveConstants;
+import frc.robot.SwerveModule;
+import frc.robot.classes.Position2D; 
 
 public class Drivetrain extends SubsystemBase {
     public SwerveDriveOdometry m_swerveOdometry;
@@ -59,6 +57,28 @@ public class Drivetrain extends SubsystemBase {
             new SwerveModule(3, SwerveConstants.Swerve.Mod3.constants)
         };
 
+    }
+
+    public void drive(Translation2d translation, Rotation2d rotation, boolean fieldRelative, boolean isOpenLoop) {
+        SwerveModuleState[] swerveModuleStates = 
+            SwerveConstants.Swerve.swerveKinematics.toSwerveModuleStates(
+                fieldRelative ? ChassisSpeeds.fromFieldRelativeSpeeds(
+                                    translation.getX(),
+                                    translation.getY(),
+                                    rotation.getDegrees(),
+                                    getYaw()
+                                )
+                                : new ChassisSpeeds(
+                                    translation.getX(),
+                                    translation.getY(),
+                                    rotation.getDegrees())
+                                );
+        SwerveDriveKinematics.desaturateWheelSpeeds(swerveModuleStates, SwerveConstants.Swerve.maxSpeed);
+
+        for (SwerveModule module : m_swerveModules) {
+            module.setDesiredState(swerveModuleStates[module.m_moduleNumber], isOpenLoop);
+        }
+
         // By pausing init for a second before setting module offsets, we avoid a bug with inverting motors
         Timer.delay(1.0);
         resetModulesToAbsolute();
@@ -69,8 +89,8 @@ public class Drivetrain extends SubsystemBase {
         AutoBuilder.configureHolonomic(
             this::getPose, // Robot pose supplier
             this::resetOdometry, // Method to reset odometry (will be called if your auto has a starting pose)
-           // this::getRobotRelativeSpeeds, // ChassisSpeeds supplier. MUST BE ROBOT RELATIVE
-           // this::drive, // Method that will drive the robot given ROBOT RELATIVE ChassisSpeeds
+            this::getRobotRelativeSpeeds, // ChassisSpeeds supplier. MUST BE ROBOT RELATIVE
+            this::drive, // Method that will drive the robot given ROBOT RELATIVE ChassisSpeeds
             new HolonomicPathFollowerConfig( // HolonomicPathFollowerConfig, this should likely live in your Constants class
                 new PIDConstants(5.0, 0.0, 0.0), // Translation PID constants
                 new PIDConstants(5.0, 0.0, 0.0), // Rotation PID constants
@@ -184,11 +204,17 @@ public class Drivetrain extends SubsystemBase {
         resetOdometry(new Pose2d(startingPose.getX(), startingPose.getY(), new Rotation2d(startingPose.getHeadingRadians())));
     }
 
+    
+
+    public Command getAutonomousCommand(){
+        return new PathPlannerAuto("Example Auto");
+    }
+
     public void stop() {
         drive(new Translation2d(0, 0), getYaw(), true, false);
     }
 
-    public Command getAutonomousCommand(){
-        return new PathPlannerAuto("Example Auto");
+    public void getRobotRelativeSpeeds(){
+         
     }
 }
