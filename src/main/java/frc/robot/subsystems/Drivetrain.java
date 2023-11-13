@@ -57,28 +57,6 @@ public class Drivetrain extends SubsystemBase {
             new SwerveModule(3, SwerveConstants.Swerve.Mod3.constants)
         };
 
-    }
-
-    public void drive(Translation2d translation, Rotation2d rotation, boolean fieldRelative, boolean isOpenLoop) {
-        SwerveModuleState[] swerveModuleStates = 
-            SwerveConstants.Swerve.swerveKinematics.toSwerveModuleStates(
-                fieldRelative ? ChassisSpeeds.fromFieldRelativeSpeeds(
-                                    translation.getX(),
-                                    translation.getY(),
-                                    rotation.getDegrees(),
-                                    getYaw()
-                                )
-                                : new ChassisSpeeds(
-                                    translation.getX(),
-                                    translation.getY(),
-                                    rotation.getDegrees())
-                                );
-        SwerveDriveKinematics.desaturateWheelSpeeds(swerveModuleStates, SwerveConstants.Swerve.maxSpeed);
-
-        for (SwerveModule module : m_swerveModules) {
-            module.setDesiredState(swerveModuleStates[module.m_moduleNumber], isOpenLoop);
-        }
-
         // By pausing init for a second before setting module offsets, we avoid a bug with inverting motors
         Timer.delay(1.0);
         resetModulesToAbsolute();
@@ -116,8 +94,38 @@ public class Drivetrain extends SubsystemBase {
              0.0, // Goal end velocity in meters/sec
              0.0 // Rotation delay distance in meters. This is how far the robot should travel before attempting to rotate.
         );
+
     }
 
+    public void drive(Translation2d translation, Rotation2d rotation, boolean fieldRelative, boolean isOpenLoop) {
+        SwerveModuleState[] swerveModuleStates = 
+            SwerveConstants.Swerve.swerveKinematics.toSwerveModuleStates(
+                fieldRelative ? ChassisSpeeds.fromFieldRelativeSpeeds(
+                                    translation.getX(),
+                                    translation.getY(),
+                                    rotation.getDegrees(),
+                                    getYaw()
+                                )
+                                : new ChassisSpeeds(
+                                    translation.getX(),
+                                    translation.getY(),
+                                    rotation.getDegrees())
+                                );
+        SwerveDriveKinematics.desaturateWheelSpeeds(swerveModuleStates, SwerveConstants.Swerve.maxSpeed);
+
+        for (SwerveModule module : m_swerveModules) {
+            module.setDesiredState(swerveModuleStates[module.m_moduleNumber], isOpenLoop);
+        }
+    }
+
+    public void drive(ChassisSpeeds speeds) {
+        SwerveModuleState[] swerveModuleStates = SwerveConstants.Swerve.swerveKinematics.toSwerveModuleStates(speeds);
+        SwerveDriveKinematics.desaturateWheelSpeeds(swerveModuleStates, SwerveConstants.Swerve.maxSpeed);
+        
+        for (SwerveModule module : m_swerveModules) {
+            module.setDesiredState(swerveModuleStates[module.m_moduleNumber], false);
+        }
+    }
     
 
     public void setNeutralMode(NeutralMode nm) {
@@ -214,7 +222,8 @@ public class Drivetrain extends SubsystemBase {
         drive(new Translation2d(0, 0), getYaw(), true, false);
     }
 
-    public void getRobotRelativeSpeeds(){
-         
+    public ChassisSpeeds getRobotRelativeSpeeds(){
+        SwerveModuleState[] swerveModuleStates = getModuleStates();
+        return SwerveConstants.Swerve.swerveKinematics.toChassisSpeeds(swerveModuleStates);
     }
 }
