@@ -163,15 +163,6 @@ public class Drivetrain extends SubsystemBase {
         return m_swerveOdometry.getPoseMeters();
     }
 
-   /*  public getRobotRelativeSpeeds(){
-      return
-                                   
-    }
-*/
-  //  public Pose2d resetPose(){
-   //     m_swerveOdometry.resetPosition(getYaw(), getModulePositions(), m_startingPose);
-  //  }
-
     public void resetOdometry(Pose2d pose) {
         m_swerveOdometry.resetPosition(getYaw(), getModulePositions(), pose);
     }
