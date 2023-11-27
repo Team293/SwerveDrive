@@ -193,6 +193,18 @@ public class Drivetrain extends SubsystemBase {
         return Rotation2d.fromDegrees(gyro.getAngle());
     }
 
+    public void rotateYawBy(Rotation2d deltaYaw) {
+        SwerveModuleState[] states = getModuleStates();
+        SwerveModuleState[] newStates = new SwerveModuleState[states.length];
+        for (int i = 0; i < states.length; i++) {
+            SwerveModuleState state = states[i];
+            Rotation2d newRotation = state.rotation.plus(deltaYaw);
+            SwerveModuleState newState = new SwerveModuleState(state.speedMetersPerSecond, newRotation);
+            newStates[i] = newState;
+        }
+        setModuleStates(newStates);
+    }
+
     public void resetModulesToAbsolute() {
         for (SwerveModule module : m_swerveModules) {
             module.resetToAbsolute();

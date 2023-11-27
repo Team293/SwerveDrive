@@ -7,6 +7,7 @@ import frc.robot.classes.SpikeController;
 import frc.robot.commands.OrientedDrive;
 import frc.robot.commands.SequentialAutoCommand;
 import frc.robot.commands.SequentialAutoCommand.StartPositions;
+import frc.robot.commands.RotateYaw;
 import frc.robot.subsystems.Drivetrain;
 
 import com.ctre.phoenix.motorcontrol.NeutralMode;
@@ -69,9 +70,16 @@ public class RobotContainer {
      */
     private void configureButtonBindings() {
         /******** Operator Controls ********/
-        // final JoystickButton xboxCalibrateExtenderBtn = new JoystickButton(m_operatorXboxController,
-        //     XboxController.Button.kRightBumper.value);
-        // xboxCalibrateExtenderBtn.whileTrue(new CalibrateExtender(m_arm));
+        XboxController.Button[] rotateYawButtons = new XboxController.Button[] {
+            XboxController.Button.kX,
+            XboxController.Button.kB,
+            XboxController.Button.kA
+        };
+        double[] yawRotations = new double[] {-90d, 90d, 180d};
+        for (int i = 0; i < rotateYawButtons.length; i++) {
+            JoystickButton button = new JoystickButton(m_operatorXboxController, rotateYawButtons[i].value);
+            button.onTrue(new RotateYaw(m_drivetrain, yawRotations[i]));
+        }
 
         // Added options to the dropdown for driveChooser and putting it into
         // smartdashboard
