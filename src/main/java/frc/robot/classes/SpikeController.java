@@ -4,6 +4,7 @@ import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
+import edu.wpi.first.wpilibj2.command.button.JoystickButton;
 
 public class SpikeController {
     private final XboxController m_controller;
@@ -103,5 +104,36 @@ public class SpikeController {
 
     public boolean getYButton() {
         return m_controller.getYButton();
+    }
+
+    public enum Button {
+        AButton(XboxController.Button.kA.value),
+        BButton(XboxController.Button.kB.value),
+        XButton(XboxController.Button.kX.value),
+        YButton(XboxController.Button.kY.value),
+        LeftBumper(XboxController.Button.kLeftBumper.value),
+        RightBumper(XboxController.Button.kRightBumper.value);
+
+        public final int index;
+
+        private Button(int index) {
+            this.index = index;
+        }
+    }
+
+    public boolean getButton(Button buttonToGet) {
+        switch (buttonToGet) {
+            case AButton: return getAButton();
+            case BButton: return getBButton();
+            case XButton: return getXButton();
+            case YButton: return getYButton();
+            case LeftBumper: return getLeftBumper();
+            case RightBumper: return getRightBumper();
+            default: throw new IllegalArgumentException("Invalid Spike Controller Button (should never happen)");
+        }
+    }
+
+    public JoystickButton getJoystickButton(Button buttonToGet) {
+        return new JoystickButton(m_controller, buttonToGet.index);
     }
 }

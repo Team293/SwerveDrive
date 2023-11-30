@@ -18,6 +18,7 @@ import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.button.JoystickButton;
 
 /**
  * This class is where the bulk of the robot should be declared. Since
@@ -70,14 +71,14 @@ public class RobotContainer {
      */
     private void configureButtonBindings() {
         /******** Operator Controls ********/
-        XboxController.Button[] rotateYawButtons = new XboxController.Button[] {
-            XboxController.Button.kX,
-            XboxController.Button.kB,
-            XboxController.Button.kA
+        SpikeController.Button[] rotateYawButtons = new SpikeController.Button[] {
+            SpikeController.Button.XButton,
+            SpikeController.Button.BButton,
+            SpikeController.Button.AButton
         };
         double[] yawRotations = new double[] {-90d, 90d, 180d};
         for (int i = 0; i < rotateYawButtons.length; i++) {
-            JoystickButton button = new JoystickButton(m_operatorXboxController, rotateYawButtons[i].value);
+            JoystickButton button = m_operatorController.getJoystickButton(rotateYawButtons[i]);
             button.onTrue(new RotateYaw(m_drivetrain, yawRotations[i]));
         }
 

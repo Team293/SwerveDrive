@@ -198,7 +198,7 @@ public class Drivetrain extends SubsystemBase {
         SwerveModuleState[] newStates = new SwerveModuleState[states.length];
         for (int i = 0; i < states.length; i++) {
             SwerveModuleState state = states[i];
-            Rotation2d newRotation = state.rotation.plus(deltaYaw);
+            Rotation2d newRotation = state.angle.plus(deltaYaw);
             SwerveModuleState newState = new SwerveModuleState(state.speedMetersPerSecond, newRotation);
             newStates[i] = newState;
         }
