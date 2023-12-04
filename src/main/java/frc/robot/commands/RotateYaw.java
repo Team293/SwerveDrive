@@ -10,7 +10,6 @@
 
 package frc.robot.commands;
 
-import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.wpilibj2.command.CommandBase;
 import frc.robot.subsystems.Drivetrain;
 
@@ -19,11 +18,11 @@ import frc.robot.subsystems.Drivetrain;
  */
 public class RotateYaw extends CommandBase {
     private final Drivetrain m_drivetrain;
-    private final double m_degrees;
+    private final SetYaw m_realCommand;
 
     public RotateYaw(Drivetrain drivetrain, double degrees) {
         m_drivetrain = drivetrain;
-        m_degrees = degrees;
+        m_realCommand = new SetYaw(m_drivetrain, m_drivetrain.getYaw().getDegrees() + degrees);
 
         addRequirements(m_drivetrain);
     }
@@ -31,16 +30,22 @@ public class RotateYaw extends CommandBase {
     // Called when the command is initially scheduled.
     @Override
     public void initialize() {
+        m_realCommand.initialize();
     }
 
     // Called every time the scheduler runs while the command is scheduled.
     @Override
     public void execute() {
-        m_drivetrain.rotateYawBy(Rotation2d.fromDegrees(m_degrees));
+        m_realCommand.execute();
+    }
+
+    @Override
+    public void end(boolean interrupted) {
+        m_realCommand.end(interrupted);
     }
 
     @Override
     public boolean isFinished() {
-        return true;
+        return m_realCommand.isFinished();
     }
 }

@@ -10,27 +10,32 @@
 
 package frc.robot.commands;
 
-import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
+import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.wpilibj2.command.CommandBase;
-import frc.robot.classes.SpikeController;
+import frc.lib.util.PIDHelper;
+import frc.lib.util.SPIKE293Utils;
 import frc.robot.subsystems.Drivetrain;
 
 /**
  *
  */
-public class OrientedDrive extends CommandBase {
+public class SetYaw extends CommandBase {
     private final Drivetrain m_drivetrain;
-    private final SpikeController m_controller;
-    private final boolean m_fieldOriented;
+    private final double m_degrees;
+    private final PIDHelper m_pidHelper;
 
-    private final double MAX_TRANSLATION_VELOCITY = 3.0d;
-    private final double MAX_ROTATION_VELOCITY_RAD = 0.15d;
+    // PID constants (tune these!)
+    private final double KP = 0;
+    private final double KI = 0;
+    private final double KD = 0;
 
-    public OrientedDrive(Drivetrain drivetrain, SpikeController controller, boolean fieldOriented) {
+    private final double DT = 0.020;
+
+    public SetYaw(Drivetrain drivetrain, double degrees) {
         m_drivetrain = drivetrain;
-        m_fieldOriented = fieldOriented;
-        m_controller = controller;
+        m_degrees = degrees;
+        m_pidHelper = new PIDHelper(KP, KI, KD);
 
         addRequirements(m_drivetrain);
     }
@@ -43,14 +48,11 @@ public class OrientedDrive extends CommandBase {
     // Called every time the scheduler runs while the command is scheduled.
     @Override
     public void execute() {
-        double translationMagnitude = m_controller.getLeftMagnitude() * MAX_TRANSLATION_VELOCITY;
-        Rotation2d translationAngle = m_controller.getLeftDirection();
-
-        Translation2d robotTranslation = new Translation2d(translationMagnitude, translationAngle);
-
-        double rotation = m_controller.getRightX() * MAX_ROTATION_VELOCITY_RAD;
-
-        m_drivetrain.drive(robotTranslation, Rotation2d.fromDegrees(rotation), m_fieldOriented, true);
-
+        double yawError = SPIKE293Utils.wrapDegrees(m_drivetrain.getYaw().getDegrees() - m_degrees);
+        boolean isClockwise = yawError < 180;
+        double actualYawError = Math.min(yawError, 360 - yawError);
+        double yawDifference = actualYawError * (isClockwise ? 1 : -1);
+        double degreesToRotate = m_pidHelper.step(yawDifference, DT);
+        m_drivetrain.drive(new Translation2d(), Rotation2d.fromDegrees(degreesToRotate), false, true);
     }
 }

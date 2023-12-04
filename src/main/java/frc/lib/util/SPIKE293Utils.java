@@ -43,6 +43,10 @@ public final class SPIKE293Utils {
 
         return retval;
     }
+    
+    public static double wrapDegrees(double degrees) {
+        return (degrees % 360 + 360) % 360;
+    }
 
     /**
      * Converts from encoder edges per 100 milliseconds to feet per second.
