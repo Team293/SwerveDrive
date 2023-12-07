@@ -25,12 +25,17 @@ public class SetYaw extends CommandBase {
     private final double m_degrees;
     private final PIDHelper m_pidHelper;
 
+    private int finishCounter = 0;
+
     // PID constants (tune these!)
     private final double KP = 0;
     private final double KI = 0;
     private final double KD = 0;
 
     private final double DT = 0.020;
+
+    private final double THRESHHOLD = 0.05;
+    private final int FINISH_COUNT = 3;
 
     public SetYaw(Drivetrain drivetrain, double degrees) {
         m_drivetrain = drivetrain;
@@ -51,8 +56,15 @@ public class SetYaw extends CommandBase {
         double yawError = SPIKE293Utils.wrapDegrees(m_drivetrain.getYaw().getDegrees() - m_degrees);
         boolean isClockwise = yawError < 180;
         double actualYawError = Math.min(yawError, 360 - yawError);
+        if (actualYawError > THRESHHOLD) finishCounter = 0;
+        else finishCounter++;
         double yawDifference = actualYawError * (isClockwise ? 1 : -1);
         double degreesToRotate = m_pidHelper.step(yawDifference, DT);
         m_drivetrain.drive(new Translation2d(), Rotation2d.fromDegrees(degreesToRotate), false, true);
+    }
+
+    @Override
+    public boolean isFinished() {
+        return finishCounter >= FINISH_COUNT;
     }
 }
