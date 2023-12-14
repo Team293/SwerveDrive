@@ -58,8 +58,12 @@ public class Drivetrain extends SubsystemBase {
         };
 
         // By pausing init for a second before setting module offsets, we avoid a bug with inverting motors
-        Timer.delay(1.0);
-        resetModulesToAbsolute();
+        new Thread(() -> {
+          try {
+            Thread.sleep(1000);
+            resetModulesToAbsolute();
+          } catch (Exception e) {}
+        }).start();
 
         // Create a new swerve odometry object, similar to the Kinematics.java file before 
         m_swerveOdometry = new SwerveDriveOdometry(SwerveConstants.Swerve.swerveKinematics, getYaw(), getModulePositions());
@@ -88,13 +92,12 @@ public class Drivetrain extends SubsystemBase {
           Units.degreesToRadians(540), Units.degreesToRadians(720));
 
         // Since AutoBuilder is configured, we can use it to build pathfinding commands
-        Command pathfindingCommand = AutoBuilder.pathfindToPose(
-             targetPose,
-             constraints,
-             0.0, // Goal end velocity in meters/sec
-             0.0 // Rotation delay distance in meters. This is how far the robot should travel before attempting to rotate.
-        );
-
+        // Command pathfindingCommand = AutoBuilder.pathfindToPose(
+        //      targetPose,
+        //      constraints,
+        //      0.0, // Goal end velocity in meters/sec
+        //      0.0 // Rotation delay distance in meters. This is how far the robot should travel before attempting to rotate.
+        // );
     }
 
     public void drive(Translation2d translation, Rotation2d rotation, boolean fieldRelative, boolean isOpenLoop) {

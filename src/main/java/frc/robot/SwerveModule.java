@@ -36,6 +36,7 @@ public class SwerveModule {
         m_angleEncoder = new CANCoder(moduleConstants.cancoderID);
         configAngleEncoder();
 
+
         // Angle motor config
         m_angleMotor = new TalonFX(moduleConstants.angleMotorID);
         configAngleMotor();
@@ -47,12 +48,22 @@ public class SwerveModule {
         m_lastAngle = getState().angle;
     }
 
+    public void stop() {
+        m_driveMotor.set(ControlMode.PercentOutput, 0);
+        m_angleMotor.set(ControlMode.PercentOutput, 0);
+    }
+
     public void setNeutralMode(NeutralMode neutralMode) {
         m_angleMotor.setNeutralMode(neutralMode);
         m_driveMotor.setNeutralMode(neutralMode);
     }
 
     public void setDesiredState(SwerveModuleState desiredState, boolean isOpenLoop) {
+        if (desiredState.speedMetersPerSecond < 0.05) {
+            stop();
+            return;
+        }
+
         desiredState = CTREModuleState.optimize(desiredState, getState().angle);
         setAngle(desiredState);
         setSpeed(desiredState, isOpenLoop);
